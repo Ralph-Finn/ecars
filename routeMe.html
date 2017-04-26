@@ -1,0 +1,212 @@
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+		body, html {width: 100%;height: 100%; margin:0;font-family:"微软雅黑";}
+		#l-map{height:100%;width:100%;}
+		#r-result{width:100%; font-size:14px; line-height:20px;}
+		#timepicker{position:absolute; left:0px; top:0px; background-color:rgba(0%,0%,0%,0);width:320px}
+		#time .ui-slider-range { background: #81C0C0; }
+		#time .ui-slider-handle { border-color: #81C0C0; }
+		#time{
+		width:320px;
+		}
+	</style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=Ss2NVqvLYAcM3EcdVcTT6QLtAkDvXCvX"></script>
+	<script src = "https://cdn.wilddog.com/sdk/js/2.0.0/wilddog-auth.js"></script>
+	<script src = "https://cdn.wilddog.com/sdk/js/2.0.0/wilddog-sync.js"></script>
+    <script src="https://cdn.wilddog.com/js/vendor/jquery-1.11.2.min.js"></script>
+	<script src="//apps.bdimg.com/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="//apps.bdimg.com/libs/jqueryui/1.10.4/css/jquery-ui.min.css">
+	<title>车流分析</title>
+</head>
+<style type="text/css">  
+   .anchorBL{  
+       display:none;  
+   }
+	.div-c{ position:absolute; left:0px; top:70%; background-color:rgba(0%,0%,0%,0); width:100%; height:30%}     
+   </style>
+<body>
+	<div id="l-map"></div>
+	<div id="r-result"></div>
+	<div id="main" class="div-c">车流量折线图</div>
+	<div id="timepicker">
+	<h4 style="display:inline-block;color:#ffffff;">选择观测时间：</h4>
+	<h4 style = "text-align:center;font-family:verdana;display:inline-block;color:#ffffff" id="swatch"></h4> 
+	<div id="time" style="width:300px;margin-right:10px"></div>
+</div>
+</body>
+</html>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script type="text/javascript">
+    // 百度地图API功能
+	$(function(){
+		$( "#time" ).slider({
+		  orientation: "horizontal",
+		  range: "min",
+		  max: 288,
+		  value: 150,
+		  slide: refreshSwatch,
+		  change: refreshSwatch
+		});
+		$( "#swatch" ).html("12:30");
+	});
+	function refreshSwatch(){
+    var time = $( "#time" ).slider( "value" );
+	var hour = parseInt(time/12);
+	var min = (time - hour*12)*5;
+    $( "#swatch" ).html(hour+':'+min);
+  }
+	var config = {
+	syncURL: "https://ecars.wilddogio.com" //输入节点 URL
+	};
+	wilddog.initializeApp(config);
+	//var ref = wilddog.sync().ref("/Shee1/OD");
+    var map = new BMap.Map("l-map");
+	map.enableScrollWheelZoom(true); 
+	map.setMapStyle({style:'midnight'});
+    map.centerAndZoom(new BMap.Point(120.1, 30.35), 13);
+    var options = {
+        onSearchComplete: function(results){
+            if (driving.getStatus() == BMAP_STATUS_SUCCESS){
+                // 获取第一条方案
+                var plan = results.getPlan(0);
+                // 获取方案的驾车线路
+                var route = plan.getRoute(0);
+				//console.log(route.vr);
+                // 获取每个关键步骤,并输出到页面
+				var tt=route.getPath();
+				//c
+				//var ss=route.getPolyline();
+				var polyline = new BMap.Polyline(tt, {strokeColor:"white", strokeWeight:4, strokeOpacity:0.03});   //创建折线
+				//console.log(polyline);
+				map.addOverlay(polyline);   //增加折线
+				//console.log(polyline);
+				//map.addOverlay(ss); 
+				//postData(tt);
+            }
+        }
+    };
+	/////////////////////////
+	var rex = wilddog.sync().ref("/TH/Sheet1");//新建一个对象指引到TH
+	var ddm=function(snapshot, error) {
+	var newPost = snapshot.val();
+	var time=new Array();
+	var th=new Array();
+	for(var i=0;i<79;i++)
+	{
+	 time.push(newPost[i].time);
+	 th.push(newPost[i].th);
+	}
+	console.log(time);
+	console.log(th);
+	HHH(time,th);
+	};	
+	rex.on('value',ddm );
+	//////////////////////////////////////
+	var driving = new BMap.DrivingRoute(map, options);//每次创造一个新的对象
+	function postAll()
+	{
+	for(var i=0;i<2152;i++){
+		var s="/Sheet1/"+i;
+		var rex = wilddog.sync().ref(s);
+		//console.log(i);
+		rex.on('value', function(snapshot, error) {
+		var point1=new BMap.Point(116.405, 39.920);
+		var point2=new BMap.Point(116.405, 39.920);
+		var newPost = snapshot.val(); 
+		//console.log(newPost);
+		point1.lng=newPost.fj;
+		point1.lat=newPost.fw;
+		point2.lng=newPost.sj;
+		point2.lat=newPost.sw;
+		getNum(newPost.time);
+		driving.search(point1, point2);
+		});
+	}
+	}
+    
+	function postData(data)
+	{
+	var first='[';
+	var len=data.length;
+	for(var i=0;i<len;i++){
+	var longtitude=data[i].lng;
+	var latitude=data[i].lat;
+	if(i==len-1){
+	first=first+'{lng:'+longtitude+','+'lat:'+latitude+'}'
+	}
+	else{
+	first=first+'{lng:'+longtitude+','+'lat:'+latitude+'},'
+	}
+	}
+	first=first+']';
+	var obj = eval ("(" + first + ")");//得到字符串之后再转化为json对象，然后使用野狗的实时云上传到云端
+	//console.log(first);
+	//console.log(obj);
+	ref.push(obj);
+	}
+	var hour=4;//第一辆车从四点发车
+	var numChe=new Array();
+	for(var i=1;i<=24;i++){
+		numChe[i]=0;
+	}
+	function getNum(fen)
+	{
+	if(fen>(hour+1)*60){
+		hour++;
+	}
+	numChe[hour]++;
+	}
+	require.config({
+            paths: {
+                echarts: 'http://echarts.baidu.com/build/dist'
+            }
+        });
+		function HHH(time,th){
+	require(
+            [
+                'echarts',
+                'echarts/chart/line' // 使用柱状图就加载bar模块，按需加载
+            ],
+            function (ec) {
+                // 基于准备好的dom，初始化echarts图表
+                var myChart = ec.init(document.getElementById('main')); 
+                
+                var option = {
+                    tooltip: {
+                        show: true
+                    },
+                    legend: {
+                        data:['车流量']
+                    },
+					calculable : true,
+                    xAxis : [
+                        {
+                            type : 'category',
+                            data : time
+                        }
+                    ],
+                    yAxis : [
+                        {
+                            type : 'value'
+                        }
+                    ],
+                    series : [
+                        {
+                            "name":"分时车流量",
+                            "type":"line",
+							"itemStyle": {normal: {areaStyle: {type: 'default'}}},
+                            "data":th
+                        }
+                    ]
+                };
+        
+                // 为echarts对象加载数据 
+                myChart.setOption(option); 
+            }
+        );
+		}
+	postAll();
+</script>

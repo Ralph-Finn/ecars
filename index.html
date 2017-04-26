@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>智能电动汽车综合服务平台</title>
+<link href="css/login.css" type="text/css" rel="stylesheet">
+<script src = "https://cdn.wilddog.com/sdk/js/2.2.0/wilddog-auth.js"></script>
+</head>
+<body>
+
+<div class="login">
+    <div class="message">系统登录</div>
+    <div id="darkbannerwrap"></div>
+
+    <form name="form"method="post" onClick="tz()" >
+		<input name="action" value="login" type="hidden">
+		<input id="name" name="username" placeholder="用户名" required="" type="text">
+		<hr class="hr15">
+		<input id="pass" name="pass" placeholder="密码" required="" type="password">
+		<hr class="hr15">
+		<input value="登录" style="width:100%;" type="button" >
+		<hr class="hr20">
+    <div style="text-align:center">
+    <a href="./zhu.html" style="color:#3399cc">注册</a>
+  </div>
+		<!-- 帮助<a onClick="window.open('连接')">忘记密码</a> -->
+	</form>
+
+
+</div>
+
+<div class="copyright">© 南方电网公司电气化交通服务平台 浙江大学</a></div>
+
+</body>
+</html>
+<script>
+var config = {
+  authDomain: "usercheck.wilddog.com"
+};
+wilddog.initializeApp(config);
+function tz(){
+	var name=document.getElementById("name").value;
+	var p=document.getElementById("pass").value;
+	//var pass=document.getElementById("pass").value;
+	//console.log(name);
+	//console.log(pass);
+	//var pass="123456";
+	if(typeof(p)!="undefined")
+	{wilddog.auth().signInWithEmailAndPassword(name, p)
+    .then(function () {
+        window.location="./mapframtest.html";
+    }).catch(function (err) {
+        console.info('login failed ->',err);
+    });}
+
+}
+
+</script>

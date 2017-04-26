@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+		body, html {width: 100%;height: 100%;margin:0;font-family:"微软雅黑";}
+		#allmap{width:100%;height:100%;}
+	</style>
+	</style>
+	</style>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=Ss2NVqvLYAcM3EcdVcTT6QLtAkDvXCvX  "></script>
+	<script src = "https://cdn.wilddog.com/sdk/js/2.0.0/wilddog-auth.js"></script>
+	<script src = "https://cdn.wilddog.com/sdk/js/2.0.0/wilddog-sync.js"></script>
+    <script src="https://cdn.wilddog.com/js/vendor/jquery-1.11.2.min.js"></script>
+    <title>国家电网</title>
+</head>
+<style type="text/css">  
+   .anchorBL{  
+       display:none;  
+   }  
+  </style>  
+<body>
+    <div id="allmap">
+		<input type="button" onclick="conMarker(1)" value="快速" />
+		<input type="button" onclick="conMarker(2)" value="慢速" />
+		<input type="button" onclick="conMarker(3)" value="全部" />
+	</div>
+</body>
+</html>
+<script type="text/javascript">
+    // 百度地图API功能
+    var map = new BMap.Map("allmap");//加入地图类型控件
+	map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
+	map.addControl(new BMap.MapTypeControl()); 
+    var point = new BMap.Point(120.1,30.3);
+    map.centerAndZoom(point, 14);
+	var opts = {
+				width : 250,     // 信息窗口宽度
+				height: 80,     // 信息窗口高度
+				title : "充电信息" , // 信息窗口标题
+				enableMessage:true//设置允许信息窗发送短息
+			   };
+	var mapStyle={  style : "light" }; 
+	map.setMapStyle(mapStyle);
+	var config = {
+	syncURL: "https://ralph01.wilddogio.com" //输入节点 URL
+	};
+	wilddog.initializeApp(config);
+    // 编写自定义函数,创建标注,该函数是提取目标的点，然后进行绘制
+    function addMarker(cont,diva){//cont是充电站的编号，diva是充电站的类型,tan是显示的状态
+	if(diva==1)//1说明是快速的
+	{
+	var myIcon = new BMap.Icon("./kuai.png", new BMap.Size(25, 50), {});
+	var s="/Sheet1/"+cont;
+	var tt="快速充电桩——"
+	}
+	else
+	{
+	var myIcon = new BMap.Icon("./man.png", new BMap.Size(25, 50), {});
+	var s="/Sheet2/Sheet2/"+cont;
+	var tt="慢速充电桩——"	
+	}
+	var ref = wilddog.sync().ref(s);
+	ref.on('value', function(snapshot, error) {
+  if (error == null) {
+    var newPost = snapshot.val();
+	//console.log("bd_title: " + newPost.dth_title);
+    console.log("bd_lat: " + newPost.bd_lat);
+    console.log("bd_long: " + newPost.bd_long);
+	var point = new BMap.Point(120.2,30.3);  
+	point.lng=newPost.bd_long;
+	point.lat=newPost.bd_lat;
+	var marker = new BMap.Marker(point,{icon: myIcon});
+      map.addOverlay(marker);
+	  var p = marker.getPosition(); 
+	  var content=tt + "经度："+p.lng + ",纬度：" + p.lat;
+		//marker.setTitle(s);
+	addClickHandler(content,marker);
+  } else {
+    console.log(error);
+  }
+});     
+	}
+	function addClickHandler(content,marker){
+		marker.addEventListener("click",function(e){
+			openInfo(content,e)}
+		);
+	}
+	function openInfo(content,e){
+		var p = e.target;
+		var point = new BMap.Point(p.getPosition().lng, p.getPosition().lat);
+		var infoWindow = new BMap.InfoWindow(content,opts);  // 创建信息窗口对象 
+		map.openInfoWindow(infoWindow,point); //开启信息窗口
+	}
+	
+
+	///////////////////////////////////////////////////////////////
+	for (var i = 0; i < 25; i ++) {
+        
+        addMarker(i,2);
+		addMarker(i,1);
+    }
+////////////////////根据浏览器来实现定位的功能///////////////////////////////////////
+/*var geolocation = new BMap.Geolocation();
+	geolocation.getCurrentPosition(function(r){
+		if(this.getStatus() == BMAP_STATUS_SUCCESS){
+			var mk = new BMap.Marker(r.point);
+			map.addOverlay(mk);
+			map.panTo(r.point);
+			//alert('您的位置：'+r.point.lng+','+r.point.lat);
+		}
+		else {
+			alert('failed'+this.getStatus());
+		}        
+	},{enableHighAccuracy: true});*/
+	function ZoomControl1(){
+	  // 默认停靠位置和偏移量
+	  this.defaultAnchor = BMAP_ANCHOR_TOP_LEFT;
+	  this.defaultOffset = new BMap.Size(10, 10);
+	}
+
+	// 通过JavaScript的prototype属性继承于BMap.Control
+	ZoomControl1.prototype = new BMap.Control();
+
+	// 自定义控件必须实现自己的initialize方法,并且将控件的DOM元素返回
+	// 在本方法中创建个div元素作为控件的容器,并将其添加到地图容器中
+	ZoomControl1.prototype.initialize = function(map){
+	  // 创建一个DOM元素
+	  var div = document.createElement("div");
+	  // 添加文字说明
+	  div.appendChild(document.createTextNode("快速充电设施"));
+	  // 设置样式
+	  div.style.cursor = "pointer";
+	  div.style.border = "1px solid gray";
+	  div.style.backgroundColor = "#3399cc";
+	  // 绑定事件,点击一次放大两级
+	  div.onclick = function(e){
+		window.location.href="./mapK.html";
+	  }
+	  // 添加DOM元素到地图中
+	  map.getContainer().appendChild(div);
+	  // 将DOM元素返回
+	  return div;
+	}
+	// 创建控件
+	var myZoomCtrl1 = new ZoomControl1();
+	// 添加到地图当中
+	map.addControl(myZoomCtrl1);	
+	/////////////////////////////////////////////////////
+		function ZoomControl2(){
+	  // 默认停靠位置和偏移量
+	  this.defaultAnchor = BMAP_ANCHOR_TOP_LEFT;
+	  this.defaultOffset = new BMap.Size(10, 50);
+	}
+
+	// 通过JavaScript的prototype属性继承于BMap.Control
+	ZoomControl2.prototype = new BMap.Control();
+
+	// 自定义控件必须实现自己的initialize方法,并且将控件的DOM元素返回
+	// 在本方法中创建个div元素作为控件的容器,并将其添加到地图容器中
+	ZoomControl2.prototype.initialize = function(map){
+	  // 创建一个DOM元素
+	  var div = document.createElement("div");
+	  // 添加文字说明
+	  div.appendChild(document.createTextNode("慢速充电设施"));
+	  // 设置样式
+	  div.style.cursor = "pointer";
+	  div.style.border = "1px solid gray";
+	  div.style.backgroundColor = "#3399cc";
+	  // 绑定事件,点击一次放大两级
+	  div.onclick = function(e){
+		window.location.href="./mapM.html";
+	  }
+	  // 添加DOM元素到地图中
+	  map.getContainer().appendChild(div);
+	  // 将DOM元素返回
+	  return div;
+	}
+	// 创建控件
+	var myZoomCtrl2 = new ZoomControl2();
+	// 添加到地图当中
+	map.addControl(myZoomCtrl2);
+</script>

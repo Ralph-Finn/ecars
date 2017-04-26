@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>ECharts</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=Ss2NVqvLYAcM3EcdVcTT6QLtAkDvXCvX "></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/library/Heatmap/2.0/src/Heatmap_min.js"></script>
+	<script src = "https://cdn.wilddog.com/sdk/js/2.0.0/wilddog-auth.js"></script>
+	<script src = "https://cdn.wilddog.com/sdk/js/2.0.0/wilddog-sync.js"></script>
+    <script src="https://cdn.wilddog.com/js/vendor/jquery-1.11.2.min.js"></script>
+    <title>需求热力图</title>
+    <style type="text/css">
+		ul,li{list-style: none;margin:0;padding:0;float:left;}
+		html{height:100%}
+		body{height:100%;margin:0px;padding:0px;font-family:"微软雅黑";}
+		#container{height:100%;width:100%;}
+		#r-result{width:100%;}
+    </style>	
+</head>
+<body bgcolor="#000000">
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+	<button type="button" style=“margin-left：10px” onclick="openNew()">V2G分时电价</button>
+    <div id="main" style="height:80%;position:10px"></div>
+	<div id="bbt" style="height:0px;position:500px"></div>
+    <!-- ECharts单文件引入 -->
+    <script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+    <script type="text/javascript">
+	function openNew()
+	{
+	window.location.href="./tableMe.html";
+	}
+	var config = {
+	syncURL: "https://route.wilddogio.com" //输入节点 URL
+	};
+	wilddog.initializeApp(config);
+	var ref = wilddog.sync().ref("/E/Sheet1");
+	var ddm=function(snapshot, error) {
+	var newPost = snapshot.val();
+	//console.log(newPost[1].first);
+	//newPost[1].first
+	var force=new Array();
+	var power=new Array();
+	var time=new Array();
+	for(var i=0;i<96;i++)
+	{
+	 //data[i]=new Array();
+	 force.push(newPost[i].force);
+	 power.push(newPost[i].power);
+	 time.push(newPost[i].time);
+	}
+	console.log(power);
+	console.log(time);
+	console.log(force);
+	HHH(force,power,time);
+	//XXX(force,time);
+	};	
+	ref.on('value',ddm );
+        // 路径配置
+        require.config({
+            paths: {
+                echarts: 'http://echarts.baidu.com/build/dist'
+            }
+        });
+        
+        // 使用
+		function HHH(force,power,time){
+		     require(
+            [
+                'echarts',
+                'echarts/chart/bar' ,
+				'echarts/theme/macarons',// 使用柱状图就加载bar模块，按需加载
+				'echarts/chart/line'
+            ],
+            function (ec) {
+                // 基于准备好的dom，初始化echarts图表
+                var myChart = ec.init(document.getElementById('main'),'macarons'); 
+				var myChart1 = ec.init(document.getElementById('bbt')); 
+                
+                var option = {
+                    tooltip: {
+                        show: true
+                    },
+                    legend: {
+                        data:['可调度V2G电量','实际V2G电量']
+                    },
+					 title : {
+        text: 'V2G调度电量'
+    },
+					toolbox: {
+						show : true,
+						feature : {
+							mark : {show: true},
+							dataView : {show: true, readOnly: false},
+							magicType : {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+							restore : {show: true},
+							saveAsImage : {show: true}
+						}
+					},
+                    xAxis : [
+                        {
+                            type : 'category',
+                            data : time
+                        }
+                    ],
+                    yAxis : [
+                        {
+                            type : 'value'
+                        }
+                    ],
+                    series : [
+					{
+                            "name":"V2G实际调度",
+                            "type":"bar",
+                            "data":power
+                        },
+                        {
+                            "name":"可调度V2G电量",
+                            "type":"line",
+                            "data":force,
+							 itemStyle:{
+								normal:{color:'red'}
+							}
+							
+                        }
+						
+                    ]
+                };
+				
+        
+                // 为echarts对象加载数据 
+                myChart.setOption(option); 
+            }
+        );
+		}
+		function XXX(time,force){
+		require(
+            [
+                'echarts',
+                'echarts/chart/line' // 使用柱状图就加载bar模块，按需加载
+            ],
+            function (ec) {
+                // 基于准备好的dom，初始化echarts图表
+                var myChart = ec.init(document.getElementById('main')); 
+				var option = {
+					tooltip : {
+						trigger: 'axis'
+					},
+					legend: {
+						data:['输出']
+					},
+					toolbox: {
+						show : true,
+						feature : {
+							mark : {show: true},
+							dataView : {show: true, readOnly: false},
+							magicType : {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+							restore : {show: true},
+							saveAsImage : {show: true}
+						}
+					},
+					calculable : true,
+					xAxis : [
+						{
+							type : 'category',
+							boundaryGap : false,
+							data : time
+						}
+					],
+					yAxis : [
+						{
+							type : 'value'
+						}
+					],
+					series : [
+						{
+							//name:'邮件营销',
+							type:'line',
+							//stack: '总量',
+							data:force
+						}
+					]
+				};
+                    
+				myChart.setOption(option); 
+				}
+				);
+		}
+    </script>
+</body>
